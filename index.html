@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 舞台スケッチ 新LP（下書き・2026-10-10）
+     ★仮スクショ（manual-gamma/img の冊子画像）を入れてある。撮影後に動画へ差し替える。
+       差し替え先のカット番号は各 figure の data-cut と figcaption に書いてある（_reviews/2026-09-11_lp-video-order）。
+     ★canonical／og:url／体験版・製品版ベータのリンク先は「入口の決定（P1）」待ち。いまは現行LPと同じ β の Worker を指す。
+     ★英語版（/en/）は build_public.py の english_lp() を、この構成に合わせて直してから生成する（HTMLを二重に持たない）。 -->
+<title>舞台スケッチ｜立ち位置・動線を正面図と平面図で共有</title>
+<meta name="description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、客席からの見え方を正面図と平面図で同時に描けるブラウザツール。体験版は登録不要。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="舞台スケッチ — 立ち位置・動線を正面図と平面図で共有">
+<meta property="og:description" content="演出家・演者・制作チーム向け。舞台の立ち位置、動線、客席からの見え方を正面図と平面図で同時に描けるブラウザツール。">
+<meta property="og:image" content="https://stagesketch-try.juggler-arata.workers.dev/media/og-1200x630.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<!-- ★下書きのプレビュー公開用。本公開にするときは robots の noindex を外す -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="icons/stage-sketch-192.png" sizes="192x192" type="image/png">
+<style>
+:root{
+  --desk:#191512;--desk-2:#201b16;--desk-3:#282119;--line-dark:#382f25;
+  --paper:#efe7d6;--paper-2:#fbf8f1;--paper-3:#e6dfcf;--paper-line:#d8c9ab;--line-paper:#c9bba2;
+  --ink:#27221c;--ink-2:#5a5044;--ink-soft:#93856c;--brass:#9c823f;--brass-ink:#6b5a2a;
+  --rust:#a84b26;--rust-deep:#8f3e1e;--rust-ink:#df6433;
+  --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP",serif;
+  --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;
+  --fs-name:72px;--fs-lead:20px;--fs-couplet:22px;--fs-h2:30px;--fs-h3:22px;--fs-body:16px;--fs-sub:15px;--fs-small:13px;--fs-label:12px;
+  --s1:4px;--s2:8px;--s3:16px;--s4:24px;--s5:40px;--s6:64px;--s7:96px;--s8:128px;
+  --wide:1200px;--gutter:24px;--measure:680px;
+  --r1:4px;--r2:10px;--r3:16px;
+  --shadow-dark:0 2px 10px rgba(0,0,0,.35);--shadow-paper:0 1px 3px rgba(39,34,28,.18);
+  --motion-ui:180ms ease-out;
+}
+@media (max-width:720px){:root{--fs-name:40px;--fs-lead:17px;--fs-couplet:19px;--fs-h2:23px;--fs-h3:19px;--gutter:16px}}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--desk);color:var(--paper-line);font-family:var(--sans);font-size:var(--fs-body);line-height:1.8;letter-spacing:.02em}
+img{display:block;max-width:100%;height:auto}
+figure{margin:0}
+a{color:var(--rust-ink)}
+a:focus-visible,.btn:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--rust);color:var(--paper);padding:12px 16px;z-index:10}
+.skip:focus{left:8px}
+.wrap{max-width:var(--wide);margin-inline:auto;padding-inline:var(--gutter)}
+.band{padding-block:var(--s7)}
+@media (max-width:720px){.band{padding-block:var(--s6)}}
+.band-dark{background:var(--desk);color:var(--paper-line)}
+.band-paper{background:var(--paper);color:var(--ink)}
+.band-paper a{color:var(--rust)}
+.band-paper a:hover{color:var(--rust-deep)}
+h1,h2,h3{font-family:var(--serif);font-weight:600;margin:0}
+h2{font-size:var(--fs-h2);line-height:1.4;letter-spacing:.03em}
+h3{font-size:var(--fs-h3);line-height:1.5;letter-spacing:.03em}
+.band-dark h2,.band-dark h3{color:var(--paper)}
+.kicker{font-family:var(--sans);font-size:var(--fs-label);letter-spacing:.14em;color:var(--brass);margin:0 0 var(--s3)}
+.band-paper .kicker{color:var(--brass-ink)}
+.band-lead{max-width:var(--measure);margin:var(--s3) 0 0}
+[id]{scroll-margin-top:80px}
+
+/* 上の帯 */
+.top{border-bottom:1px solid var(--line-dark)}
+.top-in{display:flex;align-items:center;gap:var(--s3);min-height:64px}
+.top-name{font-family:var(--serif);font-size:18px;letter-spacing:.08em;color:var(--paper);text-decoration:none;padding-block:12px;margin-right:auto}
+.top-nav{display:flex;gap:2px}
+.top-nav a{color:var(--paper-line);text-decoration:none;font-size:14px;padding:12px 10px;border-radius:var(--r1);transition:background var(--motion-ui),color var(--motion-ui)}
+.top-nav a:hover{color:var(--paper);background:var(--desk-2)}
+.top-beta{font-size:14px;color:var(--paper);text-decoration:none;padding:11px 14px;border:1px solid var(--brass);border-radius:var(--r1);white-space:nowrap;transition:background var(--motion-ui)}
+.top-beta:hover{background:var(--desk-2)}
+@media (max-width:900px){.top-nav{display:none}}
+
+/* hero */
+.hero{text-align:center;padding-top:var(--s6)}
+.name{font-size:var(--fs-name);line-height:1.15;letter-spacing:.08em;color:var(--paper)}
+.hero-lead{font-family:var(--serif);font-size:var(--fs-lead);line-height:1.7;letter-spacing:.03em;color:var(--paper);max-width:780px;margin:var(--s4) auto 0}
+.tags{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:0 var(--s2);padding:0;margin:var(--s3) 0 0;font-size:var(--fs-small);color:var(--ink-soft)}
+.tags li{white-space:nowrap}
+.tags li:not(:last-child)::after{content:"・";margin-left:var(--s2)}
+.entries{display:flex;justify-content:center;gap:var(--s4);flex-wrap:wrap;margin-top:var(--s5)}
+.entry{flex:1 1 280px;max-width:340px}
+.btn{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:52px;padding:12px 24px;border-radius:var(--r1);font-size:16px;font-weight:600;letter-spacing:.03em;text-decoration:none;transition:background var(--motion-ui),color var(--motion-ui),border-color var(--motion-ui)}
+.btn-main{background:var(--rust);color:var(--paper)}
+.btn-main:hover{background:var(--rust-deep);color:var(--paper)}
+.btn-sub{border:1px solid var(--brass);color:var(--paper);background:transparent}
+.btn-sub:hover{background:var(--desk-2);color:var(--paper)}
+.entry-note{font-size:var(--fs-small);line-height:1.7;color:var(--ink-soft);margin:var(--s2) 0 0;text-align:left}
+.hero-media{margin:var(--s6) auto 0;max-width:560px;position:relative}
+.hero-media img{width:100%;border:1px solid var(--line-dark);border-radius:var(--r2);box-shadow:var(--shadow-dark)}
+figcaption{font-size:var(--fs-small);line-height:1.7;color:var(--ink-soft);margin-top:var(--s2);text-align:left}
+.band-paper figcaption{color:var(--ink-2)}
+.tmp-note{display:block;color:var(--brass)}
+.band-paper .tmp-note{color:var(--brass-ink)}
+.tmp-badge{position:absolute;top:10px;left:10px;background:var(--rust);color:var(--paper);font-family:var(--sans);font-size:var(--fs-label);letter-spacing:.08em;line-height:1.5;padding:3px 8px;border-radius:var(--r1);z-index:1}
+.couplets{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5);max-width:1040px;margin:var(--s6) auto 0;text-align:left}
+.couplet{border-top:1px solid var(--line-dark);padding-top:var(--s3)}
+.couplet-to{font-size:var(--fs-label);letter-spacing:.14em;color:var(--brass);margin:0 0 var(--s2)}
+.couplet-text{font-family:var(--serif);font-size:var(--fs-couplet);line-height:1.7;letter-spacing:.04em;color:var(--paper);margin:0}
+@media (max-width:900px){.couplets{grid-template-columns:1fr;gap:var(--s4)}}
+
+/* できること */
+.can-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s5);margin-top:var(--s6)}
+.can-h{font-size:var(--fs-h3);color:var(--paper);border-bottom:1px solid var(--brass);padding-bottom:var(--s2);display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
+.can-h span{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;letter-spacing:0}
+.can-list{list-style:none;margin:0;padding:0}
+.can-list li{counter-increment:f;display:grid;grid-template-columns:36px 1fr;gap:var(--s2);padding:var(--s3) 0;border-bottom:1px solid var(--line-dark)}
+.can-list li::before{content:counter(f,decimal-leading-zero);font-family:var(--sans);font-size:var(--fs-label);letter-spacing:.14em;color:var(--brass);padding-top:7px}
+.can-list b{display:block;color:var(--paper);font-size:var(--fs-body);font-weight:600;font-family:var(--serif);letter-spacing:.03em;line-height:1.5}
+.can-list span{display:block;font-size:var(--fs-sub);line-height:1.75;color:var(--paper-line);margin-top:var(--s1)}
+.can-list .beta{font-size:var(--fs-label);letter-spacing:.1em;color:var(--brass);display:inline-block;white-space:nowrap;margin-left:var(--s2);font-family:var(--sans);font-weight:400}
+.can-more{font-size:var(--fs-small);color:var(--ink-soft);margin:var(--s5) 0 0;max-width:var(--measure)}
+@media (max-width:960px){.can-grid{grid-template-columns:1fr;gap:var(--s4)}}
+
+/* 制作の流れ */
+.flow{list-style:none;margin:var(--s6) 0 0;padding:0}
+.step{display:grid;grid-template-columns:120px 5fr 7fr;gap:var(--s4) var(--s5);padding:var(--s5) 0;border-top:1px solid var(--line-paper)}
+.step:last-child{border-bottom:1px solid var(--line-paper)}
+.step-rail{display:flex;flex-direction:column;gap:var(--s1)}
+.step-no{font-family:var(--sans);font-size:var(--fs-label);letter-spacing:.14em;color:var(--brass-ink)}
+.step-label{font-family:var(--serif);font-size:28px;line-height:1.2;color:var(--ink);letter-spacing:.06em}
+.step-body h3{margin-bottom:var(--s3)}
+.was{font-size:var(--fs-sub);line-height:1.75;color:var(--ink-2);margin:0 0 var(--s3);padding-left:var(--s3);border-left:2px solid var(--line-paper)}
+.was b{display:block;font-size:var(--fs-label);letter-spacing:.14em;color:var(--brass-ink);font-weight:600;margin-bottom:2px}
+.now{margin:0;color:var(--ink)}
+.uses{font-size:var(--fs-small);color:var(--ink-2);margin:var(--s3) 0 0;display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.uses a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 10px;border:1px solid var(--line-paper);border-radius:var(--r1);color:var(--ink);text-decoration:none;background:var(--paper-2);font-size:var(--fs-small);letter-spacing:.06em;transition:border-color var(--motion-ui),color var(--motion-ui)}
+.uses a:hover{border-color:var(--rust);color:var(--rust)}
+.step-fig{position:relative}
+.step-fig img{width:100%;border:1px solid var(--line-paper);border-radius:var(--r2);box-shadow:var(--shadow-paper)}
+.phone{width:240px;margin:0 auto;background:#0d0a08;border:1px solid var(--line-dark);border-radius:40px;padding:10px;box-shadow:var(--shadow-paper);position:relative}
+.phone img{border-radius:30px;border:0;box-shadow:none;aspect-ratio:390/844;object-fit:cover;object-position:top}
+.phone .tmp-badge{top:18px;left:18px}
+@media (max-width:960px){.step{grid-template-columns:1fr;gap:var(--s3)}.step-rail{flex-direction:row;align-items:baseline;gap:var(--s3)}.step-label{font-size:24px}}
+.start-strip{margin-top:var(--s6);background:var(--paper-2);border:1px solid var(--line-paper);border-radius:var(--r2);padding:var(--s4)}
+.strip{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);counter-reset:s}
+.strip li{counter-increment:s;font-size:var(--fs-sub);line-height:1.75;color:var(--ink-2)}
+.strip li::before{content:counter(s);display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;background:var(--ink);color:var(--paper);font-size:13px;margin-bottom:var(--s2)}
+.strip b{display:block;color:var(--ink);font-family:var(--serif);font-size:var(--fs-body)}
+@media (max-width:720px){.strip{grid-template-columns:1fr;gap:var(--s3)}}
+
+/* 画面 */
+.anatomy{margin:var(--s6) 0 0;position:relative}
+.anatomy-img{position:relative}
+.anatomy-img img{width:100%;border:1px solid var(--line-paper);border-radius:var(--r2);box-shadow:var(--shadow-paper)}
+.mark{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:var(--brass);color:var(--desk);border:2px solid var(--paper);font-family:var(--sans);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+@media (max-width:720px){.mark{width:24px;height:24px;font-size:12px}}
+.legend{list-style:none;margin:var(--s5) 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--s3) var(--s5)}
+.legend li{display:grid;grid-template-columns:32px 1fr;gap:var(--s2);font-size:var(--fs-sub);line-height:1.75;color:var(--ink-2)}
+.legend-no{width:28px;height:28px;border-radius:50%;background:var(--brass);color:var(--desk);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.legend b{display:block;color:var(--ink);font-family:var(--serif);font-size:var(--fs-body)}
+@media (max-width:720px){.legend{grid-template-columns:1fr}}
+.tricks{margin-top:var(--s6)}
+.trick-list{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4)}
+.trick-list li{border-top:2px solid var(--ink);padding-top:var(--s3);font-size:var(--fs-sub);line-height:1.75;color:var(--ink-2)}
+.trick-list b{display:block;color:var(--ink);font-family:var(--serif);font-size:var(--fs-h3);line-height:1.5;margin-bottom:var(--s2)}
+@media (max-width:720px){.trick-list{grid-template-columns:1fr}}
+.devices{margin-top:var(--s6)}
+.device-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);margin-top:var(--s3)}
+.device{background:var(--paper-2);border:1px solid var(--line-paper);border-radius:var(--r2);padding:var(--s3)}
+.device-shot{height:220px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:var(--s3);position:relative}
+.device-shot img{max-height:100%;width:auto;border-radius:var(--r1);border:1px solid var(--line-paper)}
+.device-shot .phone{width:112px;padding:5px;border-radius:20px;margin:0}
+.device-shot .phone img{border-radius:15px;border:0;height:210px}
+.device-shot .tmp-badge{top:6px;left:6px}
+.device b{display:block;color:var(--ink);font-family:var(--serif);font-size:var(--fs-h3)}
+.device p{margin:var(--s1) 0 0;font-size:var(--fs-sub);line-height:1.75;color:var(--ink-2)}
+@media (max-width:720px){.device-grid{grid-template-columns:1fr}}
+.lang-line{margin:var(--s4) 0 0;font-size:var(--fs-sub);color:var(--ink-2)}
+
+/* 注意点 */
+.band-note{padding-block:var(--s6)}
+.note-in{display:grid;grid-template-columns:1fr 2fr;gap:var(--s4);border:1px solid var(--line-dark);border-radius:var(--r2);padding:var(--s4)}
+.note-in p{margin:0;max-width:var(--measure)}
+@media (max-width:900px){.note-in{grid-template-columns:1fr;gap:var(--s2)}}
+
+/* 入口 */
+.start-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-top:var(--s5)}
+.plan{border:1px solid var(--line-dark);border-radius:var(--r2);padding:var(--s4);background:var(--desk-2);display:flex;flex-direction:column}
+.plan-k{font-size:var(--fs-label);letter-spacing:.14em;color:var(--brass);margin:0 0 var(--s2)}
+.plan ul{margin:var(--s3) 0 var(--s4);padding-left:1.2em;color:var(--paper-line);font-size:var(--fs-sub);line-height:1.75}
+.plan .btn{margin-top:auto}
+.plan-note{font-size:var(--fs-small);line-height:1.7;color:var(--ink-soft);margin:var(--s2) 0 0}
+@media (max-width:900px){.start-grid{grid-template-columns:1fr}}
+
+/* 作者 */
+.about-grid{display:grid;grid-template-columns:1fr 2fr;gap:var(--s5);border-top:1px solid var(--line-dark);padding-top:var(--s6)}
+.about-text p{max-width:var(--measure);font-size:17px;line-height:1.95;font-family:var(--serif);color:var(--paper-line);margin:0 0 1.2em}
+.about-text p:last-child{margin-bottom:0}
+.about-link{display:inline-block;padding-block:12px;font-size:var(--fs-sub)}
+@media (max-width:900px){.about-grid{grid-template-columns:1fr;gap:var(--s3)}.about-text p{font-size:16px}}
+
+/* フッター */
+.foot{border-top:1px solid var(--line-dark);padding-block:var(--s5)}
+.foot-in{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:center;font-size:var(--fs-small);color:var(--ink-soft)}
+.foot a{color:var(--paper-line);padding-block:12px;display:inline-block}
+.foot-name{font-family:var(--serif);color:var(--paper);font-size:16px;letter-spacing:.08em}
+.foot-lang{margin-left:auto}
+
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#can">本文へ</a>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="top-name" href="#top">舞台スケッチ</a>
+    <nav class="top-nav" aria-label="ページ内の移動">
+      <a href="#can">できること</a>
+      <a href="#flow">制作の流れ</a>
+      <a href="#ui">画面</a>
+      <a href="#start">体験版と製品版</a>
+    </nav>
+    <a class="top-beta" href="https://stagesketch-try.juggler-arata.workers.dev/beta">製品版ベータについて</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- 1. 名前・一文・入口 → 実物（いまは仮スクショ・撮影後に動画）→ 対句（AC-7 の順） -->
+<section class="hero band band-dark" aria-labelledby="name">
+  <div class="wrap">
+    <p class="kicker">STAGE SKETCH</p>
+    <h1 class="name" id="name">舞台スケッチ</h1>
+    <p class="hero-lead">舞台の立ち位置と動線を、客席からの正面図と真上の平面図で同時に描くツールです。</p>
+    <ul class="tags"><li>ブラウザで動く</li><li>体験版は登録不要</li><li>ベータ期間中は無償</li></ul>
+    <div class="entries">
+      <div class="entry">
+        <a class="btn btn-main" href="https://stagesketch-try.juggler-arata.workers.dev/try">体験版を使ってみる</a>
+        <p class="entry-note">登録不要・保存されません・PC推奨。演者3人／セット2つまで。製品版の機能も錠つきで見えます。</p>
+      </div>
+      <div class="entry">
+        <a class="btn btn-sub" href="https://stagesketch-try.juggler-arata.workers.dev/beta">製品版ベータを使ってみたい</a>
+        <p class="entry-note">ベータ期間中は無償。お問い合わせ制です。</p>
+      </div>
+    </div>
+    <figure class="hero-media" data-cut="H">
+      <img src="media/placeholder/hero-center-crop.jpg" width="512" height="580" alt="正面図（上）と平面図（下）。演者3人が舞台に立ち、上から照明が当たっている画面">
+      <span class="tmp-badge">仮スクショ</span>
+      <figcaption>正面図（客席から）と平面図（真上から）が、同じデータで同時に動きます。<span class="tmp-note">撮影後: ヒーロー動画（カットH・20〜30秒ループ）に差し替え。</span></figcaption>
+    </figure>
+    <div class="couplets">
+      <div class="couplet">
+        <p class="couplet-to">ディレクターへ</p>
+        <p class="couplet-text">伝えたいのは、立ち位置じゃない。<br>あなたの思いは、もっと伝わる。</p>
+      </div>
+      <div class="couplet">
+        <p class="couplet-to">アーティストへ</p>
+        <p class="couplet-text">立ち位置は、稽古の前に。<br>あなたの稽古は、もっと質の高いものに。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. できること（索引） -->
+<section id="can" class="band band-dark" aria-labelledby="can-h">
+  <div class="wrap">
+    <p class="kicker">できること</p>
+    <h2 id="can-h">14の機能を、3つの仕事に分けて。</h2>
+    <p class="band-lead">製品版（ベータ）でできることです。体験版で開けるのは、このうち一部（正面図と平面図、客席の位置、シーンの切替、姿勢）。番号は下の「制作の流れ」でも使います。</p>
+    <div class="can-grid">
+      <div class="can-col">
+        <h3 class="can-h">描く<span>場面をつくる</span></h3>
+        <ol class="can-list" style="counter-reset:f 0">
+          <li id="f01"><div><b>連動する正面図と平面図</b><span>演者や大道具を動かすと、客席から見た正面図と真上の平面図が同時に変わります。</span></div></li>
+          <li id="f02"><div><b>客席のどこから見るか</b><span>最前列・中央・後方・左右席・2階席。二席目を並べて、同じ場面を見比べることもできます。</span></div></li>
+          <li id="f03"><div><b>演者の姿勢・向き・衣装</b><span>立つ、座る、逆立ち、跳ぶから、楽器を弾く姿勢まで。向きと大きさ、衣装の色も決められます。</span></div></li>
+          <li id="f04"><div><b>大道具・小道具・サーカス器具</b><span>台・テーブル・椅子・壁から、トラピーズ、シルホイール、ティシュー、チャイニーズポールまで。箱や板を組んで、自分のセットを登録できます。</span></div></li>
+          <li id="f05"><div><b>劇場を選ぶ・作る</b><span>プロセニアム、スラスト、アリーナ、シャピトー。寸法を入れて自分の劇場も作れます。せり・盆・幕も置けます。</span></div></li>
+          <li id="f06"><div><b>照明の見え方</b><span>吊り・SS・前明かり・転がしの4種。光だまりと光の筋、作業灯を消したときの暗さ、衣装に当たる色まで確かめられます。</span></div></li>
+        </ol>
+      </div>
+      <div class="can-col">
+        <h3 class="can-h">見る・共有する<span>稽古の前と、稽古で</span></h3>
+        <ol class="can-list" style="counter-reset:f 6">
+          <li id="f07"><div><b>シーン一覧と転換</b><span>幕・章でまとめたシーンを順に送るだけ。転換の秒数と暗転を決めれば、演者が歩いて移る動きを再生します。</span></div></li>
+          <li id="f08"><div><b>別案を見比べる</b><span>同じ場面でA案・B案を切り替えて決めます。採用した案だけがショーに残ります。</span></div></li>
+          <li id="f09"><div><b>3Dで舞台の中へ</b><span>客席中央から、袖から、真上から。演者を選べば、その人の目で舞台を見られます。</span></div></li>
+          <li id="f10"><div><b>演者のスマホで予習</b><span>演者は自分のiPhoneで場面を順に送り、立ち位置とメモを確かめられます。</span></div></li>
+          <li id="f11"><div><b>招待URLで同じ場面を見ながら会議<span class="beta">製品版ベータ</span></b><span>ホストは全機能。ゲストはレーザーポインタと矢印の描画だけです。</span></div></li>
+        </ol>
+      </div>
+      <div class="can-col">
+        <h3 class="can-h">本番の資料を出す<span>同じデータから</span></h3>
+        <ol class="can-list" style="counter-reset:f 11">
+          <li id="f12"><div><b>画像として書き出す</b><span>正面・平面・両方を、いまの場面からショー全体まで一括で。ピッチ用には画風4種、最大3840×2160。</span></div></li>
+          <li id="f13"><div><b>Qシート・バミリ図・香盤表</b><span>全体表、演者ごと、部署ごと。同じショーから印刷用ページとCSVが出ます。</span></div></li>
+          <li id="f14"><div><b>日本語・英語・中国語</b><span>画面の言葉を切り替えられます。海外のメンバーとも同じ画面で。</span></div></li>
+        </ol>
+      </div>
+    </div>
+    <p class="can-more">ほかにも: タイムラインと音源（時間式／カウント式）、台本とセリフキュー、付箋とペン、背景の写真、キーボードショートカット。</p>
+  </div>
+</section>
+
+<!-- 3. 制作の流れのどこで使うか（紙の帯） -->
+<section id="flow" class="band band-paper" aria-labelledby="flow-h">
+  <div class="wrap">
+    <p class="kicker">制作の流れのどこで使うか</p>
+    <h2 id="flow-h">構想から本番まで、同じショーのデータで。</h2>
+    <p class="band-lead">順番どおりに使う必要はありません。構想からでも、稽古の途中からでも入れます。段の番号は、進行表の呼び方に合わせています。</p>
+    <ol class="flow">
+
+      <li class="step">
+        <div class="step-rail"><span class="step-no">Q1</span><span class="step-label">構想</span></div>
+        <div class="step-body">
+          <h3>場面を並べる</h3>
+          <p class="was"><b>いままで</b>ノートの走り書きと、頭の中の絵。人に見せられる形になるのは、だいぶ後になりがちです。</p>
+          <p class="now">劇場のプリセットを選び、演者を登録して、シーンを並べる。幕・章でまとめ、全シーンを小さな絵で見渡せます。説明と秒数は、あとから足せます。</p>
+          <p class="uses">使う機能 <a href="#f05">05</a><a href="#f07">07</a><a href="#f08">08</a></p>
+        </div>
+        <figure class="step-fig" data-cut="03">
+          <img src="media/placeholder/46-scene-grid.jpg" width="1280" height="800" alt="全シーンの小さな絵を格子に並べた一覧画面" loading="lazy">
+          <span class="tmp-badge">仮スクショ</span>
+          <figcaption>全シーンを小さな絵で見渡す一覧。押して、その場面へ飛べます。<span class="tmp-note">撮影後: カット03（シーン一覧と転換）のループ動画。</span></figcaption>
+        </figure>
+      </li>
+
+      <li class="step">
+        <div class="step-rail"><span class="step-no">Q2</span><span class="step-label">配置</span></div>
+        <div class="step-body">
+          <h3>立ち位置を、稽古の前に決める</h3>
+          <p class="was"><b>いままで</b>平面図だけでは、客席からの見え方が分からない。口で伝えると、人によって頭の中の絵が違ってしまいます。</p>
+          <p class="now">平面図で動かすと、正面図も動く。席を替えて、どの客席からどう見えるかを確かめる。姿勢・器具・照明の見え方まで入れて、頭の中の絵を一枚にできます。</p>
+          <p class="uses">使う機能 <a href="#f01">01</a><a href="#f02">02</a><a href="#f03">03</a><a href="#f04">04</a><a href="#f06">06</a></p>
+        </div>
+        <figure class="step-fig" data-cut="01">
+          <img src="media/placeholder/22-light-render-on.jpg" width="1280" height="800" alt="舞台タブ。正面図に演者3人と4本の光の筋、平面図に光だまりが出ている" loading="lazy">
+          <span class="tmp-badge">仮スクショ</span>
+          <figcaption>正面図に光の筋、平面図に光だまり。照明の「見え方」を同じ場面で確かめられます。<span class="tmp-note">撮影後: カット01（連動）とカット09（照明）のループ動画。</span></figcaption>
+        </figure>
+      </li>
+
+      <li class="step">
+        <div class="step-rail"><span class="step-no">Q3</span><span class="step-label">確認</span></div>
+        <div class="step-body">
+          <h3>見え方を確かめ、案を決める</h3>
+          <p class="was"><b>いままで</b>劇場に入ってから「ここからだと隠れる」が分かる。直す時間は、もう残っていません。</p>
+          <p class="now">3Dで客席の各所から、そして演者の目から見る。同じ場面の別案を切り替えて、決めてから稽古に入れます。</p>
+          <p class="uses">使う機能 <a href="#f02">02</a><a href="#f08">08</a><a href="#f09">09</a></p>
+        </div>
+        <figure class="step-fig" data-cut="10">
+          <img src="media/placeholder/69-3d-rj.jpg" width="1280" height="800" alt="3Dタブ。舞台の中から見た画面。下に視点のボタン、右にレンズと客席の切替" loading="lazy">
+          <span class="tmp-badge">仮スクショ</span>
+          <figcaption>3Dで舞台の中へ。下の視点ボタンで、自由カメラ・各演者・客席を切り替えます。<span class="tmp-note">撮影後: カット10（3Dカメラ）のループ動画。</span></figcaption>
+        </figure>
+      </li>
+
+      <li class="step">
+        <div class="step-rail"><span class="step-no">Q4</span><span class="step-label">稽古</span></div>
+        <div class="step-body">
+          <h3>演者が、先に知っている</h3>
+          <p class="was"><b>いままで</b>稽古の初日は、立ち位置の説明から始まりがちです。</p>
+          <p class="now">演者は自分のスマホで場面を順に送り、立ち位置とメモを読んでから稽古場に来ます。稽古場では全画面にして場面を送り、転換を再生して見せられます。</p>
+          <p class="uses">使う機能 <a href="#f07">07</a><a href="#f10">10</a><a href="#f11">11</a></p>
+        </div>
+        <figure class="step-fig" data-cut="13">
+          <div class="phone">
+            <img src="media/placeholder/60-iphone.jpg" width="1280" height="2770" alt="iPhoneで開いた画面。正面図と平面図が縦に並び、下に場面のメモ" loading="lazy">
+            <span class="tmp-badge">仮スクショ</span>
+          </div>
+          <figcaption>iPhoneで。正面図と平面図が縦に並び、下に場面のメモ。<span class="tmp-note">撮影後: カット13（スマホで予習）のループ動画。</span></figcaption>
+        </figure>
+      </li>
+
+      <li class="step">
+        <div class="step-rail"><span class="step-no">Q5</span><span class="step-label">本番</span></div>
+        <div class="step-body">
+          <h3>資料を、同じデータから出す</h3>
+          <p class="was"><b>いままで</b>立ち位置図、香盤表、キューシートを別々に作る。直すたびに、どれかがずれていきます。</p>
+          <p class="now">画像、バミリ図、小道具の香盤表、Qシートが、同じショーから出ます。場面を直せば、資料もそこから作り直せます。</p>
+          <p class="uses">使う機能 <a href="#f12">12</a><a href="#f13">13</a></p>
+        </div>
+        <figure class="step-fig" data-cut="11">
+          <img src="media/placeholder/64-cuesheet-overall.jpg" width="1280" height="800" alt="Qシートの全体表。行がシーン、列が演者で、出ている所に点が付いている" loading="lazy">
+          <span class="tmp-badge">仮スクショ</span>
+          <figcaption>Qシートの全体表。右上から A4で見る・印刷・CSV。<span class="tmp-note">撮影後: カット11（画像の書き出し）のループ動画。Qシートのカットは未発注。</span></figcaption>
+        </figure>
+      </li>
+
+    </ol>
+
+    <div class="start-strip">
+      <h3>はじめ方は、3つだけ</h3>
+      <ol class="strip">
+        <li><b>ブラウザで開く</b>登録はいりません。PCをおすすめします。</li>
+        <li><b>保存は、この端末に</b>ファイルに書き出して、控えと受け渡しができます。</li>
+        <li><b>共有は、招待URLで</b>製品版ベータの機能です。ベータ期間中は無償。</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 4. わかりやすいUI（紙の帯・続き） -->
+<section id="ui" class="band band-paper" aria-labelledby="ui-h">
+  <div class="wrap">
+    <p class="kicker">わかりやすいUI</p>
+    <h2 id="ui-h">画面は3列。覚える場所は変わりません。</h2>
+    <p class="band-lead">左に一覧、中央に図、右にシーン。選んで、動かして、送る。この3つで、ほとんどの作業が進みます。</p>
+
+    <figure class="anatomy" data-cut="01">
+      <div class="anatomy-img">
+        <img src="media/placeholder/02-stage-tab-initial.jpg" width="1280" height="800" alt="舞台スケッチの画面全体。左に一覧の欄、中央に正面図と平面図、右にシーンの一覧" loading="lazy">
+        <span class="mark" style="--x:54.5%;--y:6.3%" aria-hidden="true">1</span>
+        <span class="mark" style="--x:4.5%;--y:56%" aria-hidden="true">2</span>
+        <span class="mark" style="--x:33.5%;--y:40%" aria-hidden="true">3</span>
+        <span class="mark" style="--x:52%;--y:86%" aria-hidden="true">4</span>
+        <span class="mark" style="--x:93.5%;--y:22%" aria-hidden="true">5</span>
+        <span class="tmp-badge">仮スクショ</span>
+      </div>
+      <figcaption>見本「ロミオとジュリエット」を開いたところ。番号は下の説明に対応します。<span class="tmp-note">撮影後: 最新版の画面で撮り直し（左上の名前と版の表示も最新に）。</span></figcaption>
+    </figure>
+
+    <ol class="legend">
+      <li><span class="legend-no">1</span><div><b>上の帯</b>タブは7つ。ふだんは「舞台」だけで足ります。劇場設定・照明デザイン・3D・Qシートは、要るときに開きます。</div></li>
+      <li><span class="legend-no">2</span><div><b>左の欄</b>ショー、演者、大道具、小道具の一覧。「＋」で足して、図の上へ置きます。</div></li>
+      <li><span class="legend-no">3</span><div><b>正面図</b>客席から見た絵。上の席のボタンで、見る位置を替えます。</div></li>
+      <li><span class="legend-no">4</span><div><b>平面図</b>真上から。ここでドラッグすると、正面図も同時に動きます。</div></li>
+      <li><span class="legend-no">5</span><div><b>右の欄</b>シーンの一覧と転換。「次のシーンをつくる」は、いまの配置を引き継げます。</div></li>
+    </ol>
+
+    <div class="tricks">
+      <h3>迷わないための3つ</h3>
+      <ul class="trick-list">
+        <li><b>最初の案内は、手を動かす順に</b>初めて開くと、図に輪が付いて「やること」が順に出ます。人物を置く、次の場面を作る、見返す、まで。</li>
+        <li><b>使い方は、画面の中でさがす</b>「使い方をさがす」に言葉を入れると、関係の深い節が並びます。冊子は日本語と英語。</li>
+        <li><b>錠つきの機能も、隠さない</b>体験版でも製品版の欄はそのまま見えます。何ができるかを、先に確かめられます。</li>
+      </ul>
+    </div>
+
+    <div class="devices">
+      <h3>端末による違い</h3>
+      <div class="device-grid">
+        <div class="device">
+          <div class="device-shot">
+            <img src="media/placeholder/20-fullscreen.jpg" width="1280" height="800" alt="PCの全画面表示。正面図を大きく出し、右下に平面図の小窓" loading="lazy">
+            <span class="tmp-badge">仮</span>
+          </div>
+          <b>PC</b><p>すべての機能。描く・決める・書き出すはここで。全画面にして見せるときも。</p>
+        </div>
+        <div class="device">
+          <div class="device-shot">
+            <img src="media/placeholder/61-ipad.jpg" width="1280" height="960" alt="iPadの横向き。道具・シーン送り・正面図が縦に積まれた画面" loading="lazy">
+            <span class="tmp-badge">仮</span>
+          </div>
+          <b>iPad</b><p>稽古場で。ホーム画面に追加して、場面を送り、見せる。</p>
+        </div>
+        <div class="device">
+          <div class="device-shot">
+            <div class="phone">
+              <img src="media/placeholder/60-iphone.jpg" width="1280" height="2770" alt="iPhoneの画面。正面図と平面図が縦に並ぶ" loading="lazy">
+            </div>
+            <span class="tmp-badge">仮</span>
+          </div>
+          <b>iPhone</b><p>見る係。演者が場面を順に送り、立ち位置とメモを読む。</p>
+        </div>
+      </div>
+      <p class="lang-line">画面の言葉は、日本語・English・中文（簡体・繁体）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5. 注意点 -->
+<section id="note" class="band band-dark band-note" aria-labelledby="note-h">
+  <div class="wrap">
+    <div class="note-in">
+      <h2 id="note-h">注意点</h2>
+      <p>舞台スケッチは技術図面ではなく、安全を検証したり保証したりするものでもありません。ディレクターとアーティストの意思疎通を円滑にし、良いショーを作る時間を増やすためのスケッチです。体験版で描いたものは保存されません。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. まず触る。もっと使う。 -->
+<section id="start" class="band band-dark" aria-labelledby="start-h">
+  <div class="wrap">
+    <p class="kicker">体験版と製品版ベータ</p>
+    <h2 id="start-h">まず触る。もっと使う。</h2>
+    <div class="start-grid">
+      <div class="plan">
+        <p class="plan-k">体験版 — ブラウザで、いま</p>
+        <h3>錠の掛かった欄も、そのまま見えます。</h3>
+        <ul>
+          <li>正面図と平面図が連動して動く</li>
+          <li>客席5か所から見る</li>
+          <li>場面の切替と転換の再生</li>
+          <li>演者3人・セット2つまで、姿勢いろいろ</li>
+        </ul>
+        <a class="btn btn-main" href="https://stagesketch-try.juggler-arata.workers.dev/try">体験版を使ってみる</a>
+        <p class="plan-note">体験版はスマホでも開けますが、操作が限られます。PCでのご利用をお勧めします。</p>
+      </div>
+      <div class="plan">
+        <p class="plan-k">製品版ベータ — 14の機能すべて</p>
+        <h3>3Dカメラ、照明の見え方、オンライン会議、書き出し。</h3>
+        <ul>
+          <li>人数・セット数の上限なし</li>
+          <li>3Dカメラで演者の目線に入る</li>
+          <li>招待URLで同じ場面を見ながら会議</li>
+          <li>画像として書き出し、一部でも一括でも</li>
+        </ul>
+        <a class="btn btn-sub" href="https://stagesketch-try.juggler-arata.workers.dev/beta">製品版ベータを使ってみたい</a>
+        <p class="plan-note">ベータ期間中は無償です。ボタンの先で、お問い合わせの手順をご案内します。Macでは Safari の「ファイル」→「Dockに追加…」で、ブラウザ版を独立したウィンドウで使えます（macOS Sonoma以降）。ネイティブMac版はベータ版の対象外です。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. このアプリについて（文言は現行LPのまま） -->
+<section id="about" class="band band-dark" aria-labelledby="about-h">
+  <div class="wrap">
+    <div class="about-grid">
+      <div>
+        <p class="kicker">作った人から</p>
+        <h2 id="about-h">このアプリについて</h2>
+        <a class="about-link" href="https://stagesketch-try.juggler-arata.workers.dev/beta">製品版ベータについて詳しく →</a>
+      </div>
+      <div class="about-text">
+        <p>私は10年以上、幸運にもいくつもの素晴らしいショーに沢山演者として関わることをさせていただきました。一人の演者として、素晴らしいディレクターの意図をどれだけ把握して観客に届けることができるのかが常に私の戦いでした。このアプリは、そんな私がこれがあったらよかったのに、を盛り込んだアプリです。</p>
+        <p>芸術という抽象的なものにおいて、意思疎通を言葉だけで行うことは非常に難しいものです。ディレクターが見せたいものをアーティストが表現しようとするとき、その意図を理解することに時間を取られすぎることもありました。</p>
+        <p>私は新しい劇場に入るたびに客席を歩き回り、それぞれの場所から自分がどのように見えるかをイメージします。俯瞰図では、人や物の位置と全体のバランスを第三者の目で捉えられます。正面図では、お客さんやディレクターから舞台がどう見えるかを考えられます。演者はこれらを常に頭の何処かで考え続けます。</p>
+        <p>私はショーの世界が大好きです。だからこそ、準備不足のショーを見ると少しがっかりします。演者たちと事前に意図や配置を共有できればリハーサルの初期段階をより早く終え、その先の通し練習へ時間を使えます。そうしてショーを素晴らしいものとし、世界を少しだけ素晴らしいものにしてくれたら嬉しいです。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <span class="foot-name">舞台スケッチ</span>
+    <a href="https://stagesketch-try.juggler-arata.workers.dev/beta">製品版ベータについて</a>
+    <span>作 ARATA URAWA</span>
+    <span>ご連絡は <a href="https://pygmix.com/contact?category=tool&amp;subject=%E8%88%9E%E5%8F%B0%E3%82%B9%E3%82%B1%E3%83%83%E3%83%81">お問い合わせフォーム</a> から</span>
+    <span>画面は仮のスクリーンショット（2026-09-26 撮影）。撮影後に差し替えます</span>
+    <span class="foot-lang">日本語 ／ English（準備中）</span>
+  </div>
+</footer>
+</body>
+</html>

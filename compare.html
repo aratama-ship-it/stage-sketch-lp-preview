@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>舞台スケッチ 新LP — PC と iPhone を並べて見る</title>
+<style>
+body{margin:0;background:#2a241e;color:#efe7d6;font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif}
+.bar{padding:10px 16px;font-size:14px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #382f25;min-height:54px;box-sizing:border-box}
+.bar a{color:#df6433;padding:8px 0}
+.bar b{color:#efe7d6}
+.panes{display:grid;grid-template-columns:1fr 432px;gap:16px;padding:16px;height:calc(100vh - 54px);box-sizing:border-box}
+.pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+.pane h2{font-size:12px;letter-spacing:.14em;color:#9c823f;margin:0 0 8px;font-weight:600}
+.pc{flex:1;overflow:hidden;border:1px solid #382f25;background:#191512;position:relative;min-height:0}
+.pc iframe{width:1440px;height:900px;border:0;transform-origin:top left;position:absolute;left:0;top:0;background:#191512}
+.ph{width:410px;height:864px;background:#0d0a08;border-radius:40px;padding:10px;border:1px solid #382f25;box-sizing:border-box}
+.ph iframe{width:390px;height:844px;border:0;border-radius:30px;background:#191512}
+@media (max-width:980px){.panes{grid-template-columns:1fr;height:auto}.pc{height:70vh}.ph{margin:0 auto;max-width:100%}}
+</style>
+</head>
+<body>
+<div class="bar"><b>舞台スケッチ 新LP（下書き）</b><span>左: PC 1440px を縮小表示（枠の中でスクロール）／ 右: iPhone 390×844</span><a href="index.html">LPを単体で開く</a></div>
+<div class="panes">
+  <div class="pane"><h2>PC 1440</h2><div class="pc"><iframe id="pc" src="index.html" title="PC版の表示"></iframe></div></div>
+  <div class="pane"><h2>IPHONE 390 × 844</h2><div class="ph"><iframe src="index.html" title="スマホ版の表示"></iframe></div></div>
+</div>
+<script>
+(function(){
+  var box=document.querySelector('.pc'), f=document.getElementById('pc');
+  function fit(){ var s=box.clientWidth/1440; f.style.transform='scale('+s+')'; f.style.height=(box.clientHeight/s)+'px'; }
+  fit(); addEventListener('resize',fit);
+})();
+</script>
+</body>
+</html>
